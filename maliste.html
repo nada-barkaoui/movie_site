@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ma Liste — CinéVibe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .page-titre { padding: 2rem 2.5rem 0; font-family: var(--titre); font-size: 3rem; letter-spacing:.04em; }
+    .page-titre span { color: var(--accent); }
+
+    .barre-outils {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; padding: 1.25rem 2.5rem;
+      border-bottom: 1px solid var(--bordure);
+    }
+    .compteur-liste { font-size: 14px; color: var(--discret); }
+    .compteur-liste strong { color: var(--accent2); }
+
+    .tri-select {
+      background: var(--card); color: var(--texte);
+      border: 1px solid var(--bordure); border-radius: 99px;
+      padding: 7px 16px; font-family: var(--police); font-size: 13px;
+      cursor: pointer; outline: none;
+    }
+    .btn-vider-tout {
+      background: transparent; color: var(--discret);
+      border: 1px solid var(--bordure); border-radius: 99px;
+      padding: 7px 16px; font-family: var(--police); font-size: 13px;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-vider-tout:hover { border-color: var(--accent); color: var(--accent); }
+
+    .etat-vide { text-align: center; padding: 5rem 2rem; color: var(--discret); }
+    .etat-vide .icone-vide { font-size: 5rem; margin-bottom: 1rem; }
+    .etat-vide h2 { font-family: var(--titre); font-size: 2rem; color: var(--texte); margin-bottom:.5rem; }
+    .etat-vide p  { font-size: 14px; margin-bottom: 1.5rem; }
+
+    .carte-liste {
+      background: var(--card); border-radius: var(--rayon);
+      border: 1px solid var(--bordure); overflow: hidden; position: relative;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .carte-liste:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,.4); }
+
+    .btn-supprimer {
+      position: absolute; top: 8px; right: 8px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,63,91,.9); color: #fff; border: none;
+      font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .2s; z-index: 10;
+    }
+    .carte-liste:hover .btn-supprimer { opacity: 1; }
+
+    .date-ajout { font-size: 10px; color: var(--discret); margin-top: 2px; }
+
+    #toast {
+      position: fixed; bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface); border: 1px solid var(--bordure);
+      border-radius: 99px; padding: 10px 24px;
+      font-size: 13px; color: var(--texte); z-index: 9999;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1); white-space: nowrap;
+    }
+    #toast.visible { transform: translateX(-50%) translateY(0); }
+
+    /* Bootstrap grid for cards */
+    #contenu-liste {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAVIGATION ══ -->
+<nav>
+  <div class="logo">Ciné<span>Vibe</span></div>
+  <ul class="nav-liens">
+    <li><a href="index.html">Accueil</a></li>
+    <li><a href="film.html">Films</a></li>
+    <li><a href="maliste.html" style="color:var(--accent2);font-weight:600">Ma Liste</a></li>
+  </ul>
+  <div>
+    <button class="btn-chat" onclick="toggleChat()">🎬 Conseiller Films</button>
+  </div>
+</nav>
+
+<!-- ══ EN-TÊTE ══ -->
+<div class="page-titre">Ma <span>Liste</span></div>
+
+<!-- ══ BARRE D'OUTILS ══ -->
+<div class="barre-outils">
+  <div class="compteur-liste" id="compteur-liste">Chargement…</div>
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    <select class="tri-select" id="select-tri" onchange="trierListe()">
+      <option value="date">Tri : Date d'ajout</option>
+      <option value="note">Tri : Note</option>
+      <option value="titre">Tri : Titre</option>
+      <option value="annee">Tri : Année</option>
+    </select>
+    <button class="btn-vider-tout" onclick="viderListe()">🗑 Tout supprimer</button>
+  </div>
+</div>
+
+<!-- ══ CONTENU LISTE ══ -->
+<section class="px-4 py-4">
+  <div id="contenu-liste"></div>
+</section>
+
+<footer class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div class="logo-pied">Ciné<span>Vibe</span></div>
+  <span>© 2025 CinéVibe.</span>
+  <span><a href="index.html" style="color:var(--accent);text-decoration:none">← Retour aux films</a></span>
+</footer>
+
+<!-- ══ MODAL ══ -->
+<div id="superposition-modal" onclick="fermerModal(event)">
+  <div class="cinevibe-modal">
+    <button class="cinevibe-modal-fermer" onclick="fermerModal()">✕</button>
+    <div id="contenu-modal"></div>
+  </div>
+</div>
+
+<!-- ══ CHATBOT ══ -->
+<div id="chatbot">
+  <div class="chat-entete">
+    <div class="chat-gauche">
+      <div class="chat-avatar">🎬</div>
+      <div>
+        <div class="chat-nom">CineBot</div>
+        <div class="chat-statut">Conseiller de films</div>
+      </div>
+    </div>
+    <button class="chat-fermer" onclick="toggleChat()">✕</button>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-options" id="chat-options"></div>
+</div>
+
+<!-- ══ VIDEO PLAYER ══ -->
+<div id="superposition-video" onclick="fermerVideo(event)" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.95);align-items:center;justify-content:center;flex-direction:column;padding:1rem">
+  <button onclick="fermerVideo()" style="position:absolute;top:1rem;right:1.5rem;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:9001">✕</button>
+  <div id="titre-video" style="color:#fff;font-family:var(--titre);font-size:1.8rem;margin-bottom:1rem;text-align:center"></div>
+  <video id="lecteur-video" controls style="width:100%;max-width:960px;max-height:80vh;border-radius:12px;background:#000">
+    Votre navigateur ne supporte pas la lecture vidéo.
+  </video>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
+<script src="maliste.js"></script>
+</body>
+</html>

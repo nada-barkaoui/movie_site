@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Regarder — CinéVibe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    body { background: #000; margin: 0; min-height: 100vh; }
+
+    /* ── BARRE DU HAUT ── */
+    .barre-watch {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 60px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.9), transparent);
+      transition: opacity .3s;
+    }
+    .logo-watch { font-family: var(--titre); font-size: 1.8rem; color: var(--accent); }
+    .logo-watch span { color: var(--accent2); }
+
+    .btn-retour {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      color: #fff; border-radius: 99px; padding: 7px 18px;
+      font-family: var(--police); font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: background .2s;
+    }
+    .btn-retour:hover { background: rgba(255,255,255,.25); color: #fff; }
+
+    /* ── ZONE VIDÉO ── */
+    .zone-video {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: #000;
+    }
+    #lecteur-video {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    /* ── INFO EN BAS ── */
+    .info-bas {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 2rem 2.5rem 2.5rem;
+      background: linear-gradient(to top, rgba(0,0,0,.95) 50%, transparent);
+      pointer-events: none;
+      transition: opacity .4s;
+    }
+    .film-titre-watch {
+      font-family: var(--titre); font-size: 2.5rem;
+      color: #fff; margin-bottom: .3rem;
+    }
+    .film-meta-watch {
+      display: flex; gap: 1.2rem; font-size: 13px;
+      color: rgba(255,255,255,.6); flex-wrap: wrap;
+    }
+    .film-meta-watch .note-w { color: var(--accent2); font-weight: 700; }
+
+    /* ── MASQUER TOUT QUAND IDLE ── */
+    body.idle .barre-watch { opacity: 0; pointer-events: none; }
+    body.idle .info-bas    { opacity: 0; }
+
+    /* ── PAGE D'ERREUR ── */
+    .erreur-page {
+      width: 100vw; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--texte); text-align: center; gap: 1rem;
+      background: var(--bg);
+    }
+    .erreur-page h2 { font-family: var(--titre); font-size: 2.5rem; color: var(--texte); }
+    .erreur-page p  { color: var(--discret); font-size: 14px; max-width: 400px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .film-titre-watch { font-size: 1.6rem; }
+      .barre-watch { padding: 0 1rem; }
+      .info-bas    { padding: 1.5rem 1.25rem 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- BARRE DU HAUT -->
+<div class="barre-watch" id="barre-watch">
+  <div class="logo-watch">Ciné<span>Vibe</span></div>
+  <a class="btn-retour" id="btn-retour" href="index.html">← Retour</a>
+</div>
+
+<!-- VIDÉO -->
+<div class="zone-video">
+  <video id="lecteur-video" controls autoplay>
+    Votre navigateur ne supporte pas la lecture vidéo.
+  </video>
+</div>
+
+<!-- INFOS EN BAS -->
+<div class="info-bas" id="info-bas">
+  <div class="film-titre-watch" id="film-titre"></div>
+  <div class="film-meta-watch"  id="film-meta"></div>
+</div>
+
+<script>
+  /* ── Lire le paramètre ?id= dans l'URL ── */
+  function getParam(nom) {
+    return new URLSearchParams(window.location.search).get(nom);
+  }
+
+  /* ── Afficher une page d'erreur ── */
+  function afficherErreur(msg) {
+    document.body.innerHTML =
+      '<div class="erreur-page">' +
+        '<div style="font-size:4rem">🎬</div>' +
+        '<h2>Film introuvable</h2>' +
+        '<p>' + msg + '</p>' +
+        '<a href="index.html" class="btn-principal" ' +
+           'style="text-decoration:none;padding:12px 28px;margin-top:1rem;display:inline-block">' +
+          '← Retour à l\'accueil' +
+        '</a>' +
+      '</div>';
+  }
+
+  /* ── Charger movies.json puis lancer la vidéo ── */
+  let idFilm = parseInt(getParam("id"));
+
+  fetch("movies.json")
+    .then(function(r) { return r.json(); })
+    .then(function(films) {
+
+      /* trouver le film par id */
+      let film = films.find(function(f) { return f.id === idFilm; });
+      if (!film) { afficherErreur("Aucun film avec cet identifiant."); return; }
+
+      /* titre de l'onglet */
+      document.title = film.titre + " — CinéVibe";
+
+      /* bouton retour intelligent */
+      document.getElementById("btn-retour").href =
+        document.referrer ? document.referrer : "index.html";
+
+      /* infos en bas */
+      document.getElementById("film-titre").innerHTML = film.titre;
+      document.getElementById("film-meta").innerHTML  =
+        '<span class="note-w">★ ' + film.note + '</span>' +
+        '<span>' + film.annee + '</span>' +
+        '<span>' + film.duree + '</span>' +
+        '<span>' + film.genre + '</span>';
+
+      /* vérifier que le champ video existe */
+      if (!film.video) {
+        afficherErreur(
+          "Aucun fichier vidéo associé à \"" + film.titre + "\".<br>" +
+          "Ajoutez un champ <code>\"video\"</code> dans movies.json."
+        );
+        return;
+      }
+
+      /* fond = affiche du film si dispo */
+      if (film.image) {
+        let src = film.image.split("/").map(encodeURIComponent).join("/");
+        document.body.style.backgroundImage =
+          "linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url(" + src + ")";
+        document.body.style.backgroundSize     = "cover";
+        document.body.style.backgroundPosition = "center";
+      }
+
+      /* lancer la vidéo */
+      let lecteur = document.getElementById("lecteur-video");
+      lecteur.src = film.video;
+      lecteur.load();
+      lecteur.play().catch(function() {
+        /* autoplay bloqué par le navigateur — l'utilisateur clique play */
+      });
+
+      /* masquer la barre + infos après 3s d'inactivité */
+      let timer;
+      function resetIdle() {
+        document.body.classList.remove("idle");
+        clearTimeout(timer);
+        timer = setTimeout(function() {
+          if (!lecteur.paused) { document.body.classList.add("idle"); }
+        }, 3000);
+      }
+      document.addEventListener("mousemove",  resetIdle);
+      document.addEventListener("touchstart", resetIdle);
+      lecteur.addEventListener("pause", function() {
+        document.body.classList.remove("idle");
+      });
+      resetIdle();
+    })
+    .catch(function() {
+      afficherErreur("Impossible de charger la liste des films.");
+    });
+</script>
+
+</body>
+</html>
